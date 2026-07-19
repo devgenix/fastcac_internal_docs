@@ -1,0 +1,106 @@
+---
+title: "Overview & Flow"
+description: "LLC (Company) registration — beta, vendor-confirmed production-ready"
+---
+
+LLC registration is documented **entirely outside** the in-app explorer that covers Business Name
+— it lives in an [externally-hosted Postman collection](https://documenter.getpostman.com/view/28820824/2sBXqGsMzz),
+linked from the dashboard's Registration Services → Company Registration entry via an "Open Postman
+Docs" button. Nothing about LLC is in the in-app explorer at all.
+
+<Warning>
+  VAS's Postman examples for this suite leak a real API key and reference `http://localhost:8990`
+  in two endpoints. See [Known Issues](/known-issues) before copying any example curl verbatim.
+</Warning>
+
+## Environments
+
+| Environment | Base URL |
+|---|---|
+| Sandbox | `https://vasapp.oasisproducts.ng` |
+| Production | `https://vasapp.cac.gov.ng` |
+
+Same hosts as Business Name registration — LLC is just a different path prefix
+(`/api/vas/llc/...`) on the same API.
+
+## The three categories
+
+VAS's own collection divides LLC into three groups:
+
+<CardGroup cols={3}>
+  <Card title="Forward Flow" icon="arrow-right">
+    Building up a registration: add affiliates, declare PSCs, submit.
+  </Card>
+  <Card title="Utilities" icon="wrench">
+    Read-only lookups: nature of business, PSC list, status, company/shares snapshot.
+  </Card>
+  <Card title="Backward Flow" icon="arrow-rotate-left">
+    Corrections and the post-approval stamp duty flow.
+  </Card>
+</CardGroup>
+
+## The registration lifecycle
+
+```
+1. Register affiliates      POST /api/vas/llc/affiliates
+                             one call per director/shareholder/witness/secretary
+
+2. Register PSC             POST /api/vas/llc/psc
+                             for anyone with >5% direct/indirect control (or other PSC criteria)
+
+3. Submit registration       POST /api/vas/llc/register
+                              transitions the staged data into an actual submission
+
+4. (If queried) Update        PUT /api/vas/llc/register
+                              re-submit after corrections; delete/update individual
+                              affiliates/PSCs via the Backward Flow endpoints if needed
+
+5. Get RRR                   POST /api/vas/llc/stamp-duty/rrr
+                              only works once the application itself is approved — returns 400
+                              otherwise ("application not yet approved for stamp duty payment")
+
+6. Customer pays stamp duty  via the Remita RRR, outside VAS's API (typically embedded as an
+                              iframe in FastCAC's own UI)
+
+7. Verify stamp duty         POST /api/vas/llc/stamp-duty/verify
+                              confirms payment, triggers certificate generation
+```
+
+<Note>
+  LLC needs **two separate payments**: the registration fee (from VAS wallet, per
+  [Pricing](/pricing)) and stamp duty (paid by the end customer via Remita, calculated dynamically
+  — see below).
+</Note>
+
+## Stamp duty
+
+Statutory rate is **0.75% of authorized share capital**. From a real `submit registration`
+response body: 2,000,000 share capital → `"rate": 10000, "statutoryFee": 20000` — i.e. the
+statutory fee scales at roughly ₦10,000 per ₦1M of share capital above the base. **Always
+calculate dynamically from declared share capital at checkout, never hardcode** — regulated
+industries carry higher minimum share capital requirements (e.g. lottery-type businesses,
+per a real example in VAS's own analysis data: minimum ₦30,000,000).
+
+## Compliance checking happens automatically, per-affiliate
+
+A real `submit registration` response includes an embedded `complianceCheck.aiComplianceCheck`
+object *per affiliate*, with fields like `documentMatchResponse.faceMatchScore`,
+`identifierMatch`, `validGovernmentDocument` — VAS runs its own automated ID/face-match
+verification on submitted documents as part of the registration flow, similar in spirit to
+FastCAC's own separate Prembly integration for Business Name documents. Worth factoring into
+FastCAC's LLC integration design: some verification may already happen VAS-side, redundant with
+(or complementary to) FastCAC's own checks.
+
+## Enums
+
+| Category | Accepted values |
+|---|---|
+| Affiliate type | Director · Secretary · Witness · Presenter · Shareholder (real payloads also use `PSC`, not listed in VAS's own table — see [Known Issues](/known-issues)) |
+| ID type | NIN · International_passport · Driver_license |
+| PEP type | Domestic_PEP · Foreign_PEP · International_organization_PEP |
+| Mode of formation | statute · incorporation |
+
+## Cost
+
+See [Pricing](/pricing) — ₦5,000 in fixed VAS-side fees (affiliates ₦200, company ₦1,200,
+compliance ₦1,200, name reservation ₦1,200, shares ₦1,200) plus the dynamic stamp duty above.

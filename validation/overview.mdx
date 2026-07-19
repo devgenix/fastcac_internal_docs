@@ -1,0 +1,65 @@
+---
+title: "Overview & VRC"
+description: "KYB lookups for an existing company — not needed for FastCAC's registration flow, documented for future use"
+---
+
+<Info>
+  Validation Services verify an **existing** company (a KYB use case) — distinct from Business Name
+  and LLC registration, which create *new* entities. **Not needed for FastCAC's current MVP**
+  (registering new businesses), but documented here in case a future "verify a business you're
+  dealing with" feature is built.
+</Info>
+
+## VRC (Virtual RC Number)
+
+A one-use code tied to a specific company, required in the request body of any Validation Services
+endpoint that returns **private/non-public** company data. It exists for two distinct reasons:
+
+<CardGroup cols={2}>
+  <Card title="Consent" icon="check">
+    Under the Nigerian Data Protection Act (NDPA), data controllers/processors must obtain consent
+    before processing personal info. A VRC is how a company consents to its non-public data being
+    pulled via the API.
+  </Card>
+  <Card title="Authentication" icon="shield">
+    Confirms whoever is providing an RC number/company documents to a VAS API consumer actually
+    owns that company — by requiring the company to authenticate via its **CAC-registered** email,
+    not an email the API caller supplies.
+  </Card>
+</CardGroup>
+
+## How a customer generates one
+
+<Steps>
+  <Step title="Visit the VRC page">
+    Enter RC number + company type, submit.
+  </Step>
+  <Step title="Check email">
+    An auth code is sent to the company's **CAC-registered** email — not any email the requester
+    provides.
+  </Step>
+  <Step title="Enter the code">
+    Back on the VRC page, submit the code to receive the VRC.
+  </Step>
+</Steps>
+
+<Warning>
+  This means VAS Validation Services that need a VRC **cannot be run unilaterally by an API
+  consumer on a customer's behalf** — the customer (or someone with access to the company's
+  official email) has to complete this step themselves.
+</Warning>
+
+## Sandbox testing
+
+The VRC page has a "create test company here" link — generates a test company usable for the full
+validation-test flow (including generating a VRC for it) without needing a real company. Validation
+Services are paid — fund the wallet first (see [Pricing](/pricing)).
+
+## A real gap worth knowing about
+
+VAS's pricing catalog lists **33 priced Validation Services line items**, but the interactive
+in-app explorer documents only **15 concrete endpoints**. See
+[Endpoints](/validation/endpoints) for the full list, and
+[Known Issues](/known-issues#pricing-catalog-vs-documented-endpoints--a-real-unresolved-gap) for
+the specifics — there appear to be cheaper, non-VRC-gated variants of several endpoints that have
+no documented URL anywhere in VAS's own material.

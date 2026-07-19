@@ -1,0 +1,163 @@
+---
+title: "Pricing"
+description: "All priced line items across BN, LLC, Validation, and Annual Return Services — production is the source of truth"
+---
+
+<Danger>
+  **Always use pricing from the production dashboard (`vas.cac.gov.ng/user/products_BN`), not the
+  sandbox (`vas.oasisproducts.ng/pricing`).** Confirmed directly by Chukwukere (VAS/Oasis) on
+  2026-07-18: the sandbox pricing tables are **stale/wrong** and scheduled for a fix — they were
+  showing ₦16,500 for Business Name registration when production correctly shows **₦27,000**. This
+  page was corrected the same day to use production figures. If sandbox and production numbers
+  ever disagree again, production wins, full stop.
+</Danger>
+
+Source: `vas.cac.gov.ng/user/products_BN` and `.../user/products_LLC` (production dashboard,
+logged in → Registration Products and Services → Pricing tab, per registration type). Wallet is
+prepaid — see [Quickstart](/quickstart#wallet--billing) for top-up and the sandbox test card
+(wallet top-up itself is still tested against sandbox; only pricing figures needed the production
+correction).
+
+<Tip>
+  **Real cost per BN registration: ₦27,550** (₦27,000 + ₦500 priority + ₦50 advanced compliance
+  check) — this is FastCAC's actual VAS-side cost basis for the flow that's production-live today.
+</Tip>
+
+## Business Name Registration
+
+| Service / Product | Price | Sub-service | Sub-service price | Endpoint |
+|---|---|---|---|---|
+| BUSINESS NAME | **₦27,000.00** | PRIORITY SERVICE | ₦500.00 | [Business Name Registration](/business-name/endpoints#business-name-registration-submission) |
+| BN COMPLIANCE | ₦0.00 | BN COMPLIANCE ADVANCE CHECK | ₦50.00 | [Name Compliance Check](/business-name/endpoints#name-compliance-check) |
+| BN BULK REGISTRATION | ₦1,000.00 | — | — | Bulk-only product, not the per-registration path |
+| BN APPLICATION UPDATE | ₦0.00 | — | — | [Application Update](/business-name/endpoints#application-update) |
+| BN BULK COMPLIANCE | ₦0.00 | — | — | Bulk variant of the compliance check |
+| BN PRE-REG VALIDATION | ₦0.00 | — | — | [Pre-Registration Validation](/business-name/endpoints#pre-registration-validation) |
+| BUSINESS NAME PARTNERSHIP | ₦0.00 | — | — | [Business Name Partnership](/business-name/endpoints#partnership) |
+| BUSINESS NAME PARTNERSHIP UPDATE | ₦0.00 | — | — | No separate documented endpoint found — likely folded into Application Update |
+| DOWNLOAD CERTIFICATE | ₦0.00 | — | — | [Certificate Download](/business-name/endpoints#certificate-download) |
+| DOWNLOAD STATUS REPORT | ₦0.00 | — | — | [Status Report Download](/business-name/endpoints#status-report-download) |
+| POST-INC BUSINESS NAME | ₦0.00 | — | — | Post-incorporation BN service — no documented endpoint found |
+
+**Total per BN registration (with advanced check + priority): ₦27,550.00**
+
+<Note>
+  Confirmed live on production 2026-07-18 (`vas.cac.gov.ng/user/products_BN` → Pricing tab, S/N 11
+  "BUSINESS NAME" row). This matches the original 2026-07-17 vendor-call estimate (~₦27,550) — an
+  earlier pass at this doc had "corrected" that estimate down to ₦17,050 based on the sandbox
+  dashboard, which turned out to be the wrong direction: the sandbox was stale, not the call notes.
+</Note>
+
+## LLC (Company) Registration
+
+| Service / Product | Price | Endpoint |
+|---|---|---|
+| LLC COMPANY | ₦1,200.00 | Likely tied to [Get company](/llc/endpoints#get-company--get-shares) / company creation step |
+| LLC COMPLIANCE | ₦1,200.00 | No single documented endpoint — likely the AI compliance check embedded in [Submit registration](/llc/endpoints#submit-registration) |
+| LLC NAME RESERVATION | ₦1,200.00 | No documented dedicated endpoint found |
+| LLC SHARES | ₦1,200.00 | Likely tied to [Get shares](/llc/endpoints#get-company--get-shares) / shares creation step |
+| LLC AFFILIATES | ₦200.00 | [Register affiliate](/llc/endpoints#register-affiliate--individual) |
+| LLC PSC | ₦0.00 | [Register PSC](/llc/endpoints#register-psc) |
+| LLC REGISTER | ₦0.00 | [Submit registration](/llc/endpoints#submit-registration) |
+| LLC STATUS | ₦0.00 | [Status check](/llc/endpoints#status-check) |
+| LLC STAMP DUTY | ₦0.00 listed | Dynamic — 0.75% of share capital, calculated per application, not a flat catalog price. See [LLC overview](/llc/overview#stamp-duty). |
+
+**Sum of fixed non-zero LLC fees: ₦5,000.00** (company + compliance + name reservation + shares +
+affiliates), plus dynamic stamp duty paid by the customer.
+
+<Warning>
+  **Confirmed identical on sandbox and production as of 2026-07-18** — unlike Business Name, LLC
+  pricing didn't disagree between the two. But Chukwukere separately flagged LLC pricing as **also
+  wrong and scheduled for a correction**, with no revised figure given yet. Treat every number in
+  this table as provisional — re-verify against production before relying on it for real margin
+  math, and check back for an update once VAS pushes the fix.
+</Warning>
+
+<Warning>
+  Which LLC API call maps to exactly which of these 5 non-zero line items isn't confirmed — the
+  pricing dashboard lists by internal product name, not by endpoint. Confirm with VAS before
+  assuming the mapping above (marked "likely") is exact.
+</Warning>
+
+## Validation Services
+
+<Tip>
+  15 of these 33 items have a confirmed, documented endpoint — see
+  [Validation Services endpoints](/validation/endpoints) for the full request/response contract of
+  each. The other 18 are priced but undocumented; see
+  [Known Issues](/known-issues#pricing-catalog-vs-documented-endpoints--a-real-unresolved-gap).
+  These figures were sourced from the sandbox dashboard and **not yet cross-checked against
+  production** the way BN and LLC were — treat with the same caution until verified.
+</Tip>
+
+| Service / Product | Price | Documented? |
+|---|---|---|
+| BUSINESS VALIDATION SINGLE SERVICE (PREMIUM) | ₦7,500.00 | ✅ [link](/validation/endpoints#business-validation-single-service-premium) |
+| VRC - GET COMPANY AFFILIATES | ₦7,500.00 | ✅ [link](/validation/endpoints#vrc-get-company-affiliates) |
+| VRC - GET COMPANY ASSETS | ₦7,500.00 | ✅ [link](/validation/endpoints#vrc-get-company-assets) |
+| VRC - GET COMPANY CERTIFICATE | ₦7,500.00 | ✅ [link](/validation/endpoints#vrc-get-company-certificate) |
+| VRC - GET COMPANY SHARE CAPITAL | ₦7,500.00 | ✅ [link](/validation/endpoints#vrc-get-company-share-capital) |
+| VRC - GET COMPANY STATUS REPORT | ₦7,500.00 | ✅ [link](/validation/endpoints#vrc-get-company-status-report) |
+| VRC - GET COMPANY WINDING UP | ₦7,500.00 | ✅ [link](/validation/endpoints#vrc-get-company-winding-up) |
+| VRC COMPANY SHARE DISTRIBUTION | ₦7,500.00 | ✅ [link](/validation/endpoints#vrc-get-company-share-distribution) (name mismatch, likely same endpoint) |
+| GET SHARE CAPITAL | ₦7,500.00 | ⚠️ undocumented, likely non-VRC variant |
+| GET SHARE DISTRIBUTION | ₦7,500.00 | ⚠️ undocumented, likely non-VRC variant |
+| GET COMPANY USING TIN | ₦100.00 | ✅ [link](/validation/endpoints#get-company-using-tin) |
+| GENERATE TIN | ₦500.00 | ✅ [link](/validation/endpoints#generate-tin) |
+| POST GENERATE TIN | ₦1,000.00 | ⚠️ likely duplicate of Generate TIN |
+| GET COMPANY BY NAME | ₦100.00 | ✅ [link](/validation/endpoints#get-company-by-name) |
+| GET COMPANY BY RC NUMBER | ₦100.00 | ✅ [link](/validation/endpoints#get-company-by-rc-number) |
+| GET COMPANY LINE OF BUSINESS | ₦100.00 | ✅ [link](/validation/endpoints#get-company-line-of-business) |
+| GET COMPANY TIN | ₦200.00 | ✅ [link](/validation/endpoints#get-company-tin) |
+| GET COMPANY TIN | ₦500.00 | ⚠️ duplicate catalog row |
+| GET COMPANY | ₦100.00 | ✅ [link](/validation/endpoints#vrc-get-company) (VRC variant) |
+| GET COMPANY | ₦0.00 | ⚠️ duplicate catalog row |
+| VRC GET COMPANY | ₦100.00 | ⚠️ undocumented under this exact name, likely same as VRC — Get company |
+| DOWNLOAD CERTIFICATE POST | ₦500.00 | ⚠️ undocumented, likely non-VRC certificate variant |
+| GET CERTIFICATE | ₦100.00 | ⚠️ undocumented, likely non-VRC variant |
+| GET STATUS REPORT | ₦100.00 | ⚠️ undocumented, likely non-VRC variant |
+| GET WIND UP INFORMATION | ₦60.00 | ⚠️ undocumented, likely non-VRC variant |
+| GET ALL COMPANY AFFILIATES | ₦500.00 | ⚠️ undocumented, likely non-VRC variant |
+| GET AFFILIATE COMPANIES INFO | ₦400.00 | ⚠️ undocumented |
+| GET COMPANIES OF AN INDIVIDUAL | ₦160.00 | ⚠️ undocumented |
+| GET COMPANY CHARGES | ₦410.00 | ⚠️ undocumented |
+| GET COMPANY OBJECTIVES | ₦100.00 | ⚠️ undocumented |
+| GET ANNUAL RETURNS | ₦430.00 | ⚠️ undocumented (also oddly categorized — see below) |
+| OPEN AFFILIATE SEARCH | ₦500.00 | ⚠️ undocumented |
+| OPEN COMPANY SEARCH | ₦500.00 | ⚠️ undocumented |
+
+## Annual Return Services
+
+<Info>
+  Per the 2026-07-17 VAS vendor call, Annual Return Filing (Business Name) was still **in QA**,
+  ETA first week of August 2026. Pricing already exists in the catalog even though the feature
+  wasn't confirmed live as of that call — worth re-confirming availability before integrating.
+  Sourced from sandbox, not yet cross-checked against production.
+</Info>
+
+| Service / Product | Price |
+|---|---|
+| ANNUAL RETURN ACKNOWLEDGMENT LETTER | ₦500.00 |
+| ANNUAL RETURN FINANCIAL YEAR | ₦200.00 |
+| ANNUAL RETURN REGISTRATION | ₦100.00 |
+
+No endpoints for this category were found in any documentation source — pricing only.
+
+## Margin math (BN registration)
+
+Against FastCAC's actual flat customer-facing fee of **₦35,000** (as of 2026-07-18, replacing the
+old ₦30,000/₦50,000 two-tier model):
+
+| | Amount |
+|---|---|
+| Customer pays | ₦35,000 |
+| VAS cost | −₦27,550 |
+| Prembly document verification (means_of_id + passport) | −₦420 |
+| **Remaining margin** | **~₦7,030** |
+
+<Warning>
+  This is a real, meaningful correction from an earlier version of this page, which used the
+  (wrong, sandbox-sourced) ₦17,050 VAS cost and an outdated ₦30,000 customer price, and showed
+  ~₦12,530 margin. The actual margin is roughly **40% thinner** than that. See
+  `fastcac_api/CONTEXT.md` for the full pricing reconciliation history.
+</Warning>

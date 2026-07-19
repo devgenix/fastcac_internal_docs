@@ -1,0 +1,87 @@
+{
+  "$schema": "https://mintlify.com/docs.json",
+  "theme": "mint",
+  "name": "FastCAC VAS API Reference",
+  "colors": {
+    "primary": "#16A34A",
+    "light": "#07C983",
+    "dark": "#15803D"
+  },
+  "favicon": "/favicon.svg",
+  "navigation": {
+    "pages": [
+      {
+        "group": "Getting Started",
+        "pages": [
+          "index",
+          "quickstart",
+          "known-issues"
+        ]
+      },
+      {
+        "group": "Business Name Registration",
+        "pages": [
+          "business-name/overview",
+          "business-name/endpoints",
+          "business-name/compliance-codes",
+          "business-name/naming-rules"
+        ]
+      },
+      {
+        "group": "LLC (Company) Registration",
+        "pages": [
+          "llc/overview",
+          "llc/endpoints"
+        ]
+      },
+      {
+        "group": "Validation Services",
+        "pages": [
+          "validation/overview",
+          "validation/endpoints"
+        ]
+      },
+      {
+        "group": "Pricing",
+        "pages": [
+          "pricing"
+        ]
+      }
+    ],
+    "global": {
+      "anchors": [
+        {
+          "anchor": "VAS Sandbox Dashboard",
+          "href": "https://vas.oasisproducts.ng",
+          "icon": "flask"
+        },
+        {
+          "anchor": "VAS Production Dashboard",
+          "href": "https://vas.cac.gov.ng",
+          "icon": "building"
+        }
+      ]
+    }
+  },
+  "logo": {
+    "light": "/logo/light.svg",
+    "dark": "/logo/dark.svg"
+  },
+  "navbar": {
+    "links": [
+      {
+        "label": "VAS Support",
+        "href": "mailto:caccompliance@oasismgt.net"
+      }
+    ]
+  },
+  "contextual": {
+    "options": [
+      "copy",
+      "view",
+      "chatgpt",
+      "claude"
+    ]
+  },
+  "footer": {}
+}

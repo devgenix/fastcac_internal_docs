@@ -1,0 +1,79 @@
+---
+title: "Naming Rules & Query Avoidance"
+description: "Prohibited words, safe lines of business, and guidelines confirmed from VAS's own FAQ"
+---
+
+## Prohibited words
+
+<Warning>
+  VAS's own FAQ flags this list as **"updated regularly"** and recommends always re-checking via
+  the live [compliance endpoint](/business-name/endpoints#name-compliance-check) rather than
+  hardcoding. Treat the list below as a snapshot for client-side pre-validation, not a substitute
+  for the real-time API call.
+</Warning>
+
+wealth · company · empire · investment · finance · force · state · national · federal ·
+cooperative · limited · betting · sport · construction · mining · quarry · exploration · mosque ·
+church · institute · cash · monie · money · foundation · bank · center/centre · lmt/ltd · inc ·
+holding · group · consortium · funds · exchange · moni · incorporated · academy · school · ex ·
+fx · apostolic
+
+<Note>
+  Notably broader than what might be assumed: generic-sounding words like **"group," "holding,"
+  "center/centre," "exchange," and "consortium"** are flatly prohibited, not just flagged for
+  review. A BN application like "XYZ Group" or "ABC Trading Center" will fail compliance outright
+  — this isn't the same, shorter list of Government/Trust/University-style restricted words that
+  applies to CAC's portal generally. Check both; they don't fully overlap.
+</Note>
+
+## Qualifier rules
+
+Exactly **one** qualifier, and it must be **trailing**:
+
+- Missing a qualifier entirely → [code `02`](/business-name/compliance-codes),
+  `QUALIFIER_NOT_FOUND`. Suggested qualifiers: ventures, concepts, enterprises, beauty, fashion,
+  services, hub, biz.
+- More than one qualifier (e.g. both "ventures" and "enterprises") → [code `13`](/business-name/compliance-codes),
+  `MULTIPLE_QUALIFIERS`.
+- A qualifier that exists but isn't at the end of the name → [code `14`](/business-name/compliance-codes),
+  `NON_TRAILING_QUALIFIER`.
+
+## Suggested safe lines of business
+
+Pre-cleared against the prohibited-line-of-business check, per VAS's own FAQ:
+
+General merchandise · Trading · Fashion design/Tailoring · ICT service · Data analysis ·
+Poultry/Livestock farming · Crop production farming/Agro allied service · Hair stylist/salon ·
+Solar panel installation · Digital marketing · Graphic design · Content creation · Web design ·
+POS agent
+
+Not exhaustive — always validate the actual chosen line of business via the compliance endpoint
+([codes `04`/`06`](/business-name/compliance-codes)) rather than restricting users to only this
+list.
+
+## Address quality
+
+Good addresses are specific and locatable, not necessarily formal. VAS's own examples:
+
+- `"Plot 29, Icpc Avenue, Ikoyi, Lagos Island, Lagos"` — a formal street address.
+- `"Chief Eyo Ita compound Umu Village Ekop Ide community Ado LGA Oyo State"` — a landmark-relative
+  description, acceptable when a formal street address doesn't exist.
+- `"Opposite Winners Chapel Umu village EkopIde Community Ado LGA Oyo state"` — same pattern.
+
+## Full guidelines to prevent a query
+
+From VAS's own FAQ, in order of impact:
+
+1. **Compliance score ≥75%** — see [Compliance codes](/business-name/compliance-codes#practical-use)
+   for why this is a soft signal, not a hard rule.
+2. **Proprietor is not a minor and not a foreigner.** Business Name registration is
+   [Nigerian-proprietor-only](/business-name/overview) — a hard API constraint, not a soft
+   guideline.
+3. **Images are clear and appropriate** — avoid anything that could read as explicit content.
+4. **Proposed name is more than a single word.**
+5. **Addresses are clear and descriptive** — see examples above.
+6. **Line of business isn't prohibited** — validate via the compliance endpoint rather than
+   assuming.
+7. **All required fields pass validation** — see [Pre-Registration Validation](/business-name/endpoints#pre-registration-validation)
+   for the full field-level contract (date formats, email format, gender enum values, etc.).
+8. **No prohibited words** — see the list above.

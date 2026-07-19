@@ -1,0 +1,379 @@
+---
+title: "Endpoints"
+description: "Every Business Name registration endpoint, with confirmed request/response shapes"
+---
+
+All endpoints below use base URL `https://vasapp.oasisproducts.ng` (sandbox) or
+`https://vasapp.cac.gov.ng` (production), and require the `X_API_KEY` header on every request. See
+[Pricing](/pricing) for per-endpoint cost.
+
+## Name Compliance Check
+
+```
+POST /api/vas/engine/pre/bn-compliance
+```
+
+Checks a proposed name + line of business against CAC's naming rules before you spend money
+submitting. **Always call this first.** Free at baseline; the `advanceCheck` sub-service costs
+₦50.
+
+<ParamField query="advanceCheck" type="boolean" default="false">
+  Set `true` to run an extended check that also validates line of business and returns suggested
+  alternative names when the proposed one fails. Without it, you get a basic pass/fail with less
+  guidance. **Recommended always-on** — see [Response codes](/business-name/compliance-codes) for
+  the full contract this unlocks.
+</ParamField>
+
+<CodeGroup>
+```json Request
+{
+  "proposedName": "kd events enterprises",
+  "lineOfBusiness": "fashion design"
+}
+```
+
+```json Response (name taken)
+{
+  "statusCode": "07",
+  "status": "OK",
+  "message": "BUSINESS_NAME_EXISTS",
+  "data": {
+    "recommendedActions": [{ "message": "Name already exists", "keywords": null }],
+    "suggestedNames": null,
+    "similarNames": ["kd events enterprises", "kj samuels enterprises", "kb lawal enterprise"],
+    "similarityScorePercentage": 61.43,
+    "complianceScorePercentage": 63.57,
+    "success": false
+  },
+  "success": false
+}
+```
+</CodeGroup>
+
+Full response code table: [Compliance response codes](/business-name/compliance-codes).
+
+---
+
+## Pre-Registration Validation
+
+```
+POST /api/vas/engine/pre/bn/validation
+```
+
+Validates a **full submission payload** (not just the name) before you actually submit — checks
+field presence, enum values (`gender: "MALE"` not `"M"`), age (minors can't register), and more.
+Free. Use this after payment, before the real submission call, so a malformed payload never wastes
+a paying customer's money.
+
+<CodeGroup>
+```json Request
+{
+  "lineOfBusiness": "fashion",
+  "proprietorCity": "Abuja",
+  "companyCity": "Abuja",
+  "proprietorPhonenumber": "07057001119",
+  "businessCommencementDate": "2024-01-21",
+  "companyState": "F.C.T",
+  "proprietorNationality": "Nigerian",
+  "proprietorDob": "2024-01-21",
+  "proprietorFirstname": "Joshua",
+  "proprietorSurname": "Adeyemo",
+  "proposedOption1": "joshua craft",
+  "proprietorGender": "MALE",
+  "companyEmail": "chylau12@gmail.com",
+  "transactionRef": "VAS123456",
+  "signature": "Base64 PNG",
+  "meansOfId": "Base64 PNG",
+  "passport": "Base64 PNG",
+  "supportingDoc": "Base64 PNG"
+}
+```
+
+```json Response (validation failure example)
+{
+  "statusCode": 200,
+  "status": "OK",
+  "message": "validation data received successfully",
+  "data": {
+    "proprietorDob": ["minor cannot register a business"]
+  },
+  "success": true,
+  "count": 0
+}
+```
+</CodeGroup>
+
+Note the response is always `200`/`success: true` at the HTTP level — validation failures show up
+*inside* `data`, keyed by field name, as an array of human-readable problems. An empty `data: {}`
+means the payload is clean.
+
+---
+
+## Business Name Registration (submission)
+
+```
+POST /api/vas/engine/pre/business-name
+```
+
+The actual submission. Takes the full applicant + business payload plus up to 4 base64-encoded
+document images. **₦27,000** (+₦500 if `priorityService=true`) — confirmed against the production
+pricing tab; sandbox shows a stale ₦16,500, see [Pricing](/pricing).
+
+<ParamField query="priorityService" type="boolean" default="false">
+  Opt into automated approval — see [the three-state flow](/business-name/overview#automated-approval-three-states-not-two).
+  +₦500.
+</ParamField>
+
+<CodeGroup>
+```json Request
+{
+  "lineOfBusiness": "fashion",
+  "proprietorCity": "Abuja",
+  "companyCity": "Abuja",
+  "proprietorPhonenumber": "07057001119",
+  "businessCommencementDate": "2024-01-21",
+  "companyState": "F.C.T",
+  "proprietorNationality": "Nigerian",
+  "proprietorState": "F.C.T",
+  "proprietorDob": "2000-01-21",
+  "proprietorFirstname": "Joshua",
+  "proprietorOthername": "James",
+  "proprietorSurname": "Adeyemo",
+  "proposedOption1": "joshua ahmed store",
+  "proprietorGender": "MALE",
+  "proprietorStreetNumber": "41",
+  "proprietorServiceAddress": "limpopo street",
+  "companyEmail": "chylau12@gmail.com",
+  "companyStreetNumber": "41",
+  "proprietorEmail": "chylau12@gmail.com",
+  "companyAddress": "limpopo street",
+  "proprietorPostcode": "900108",
+  "proprietorLga": "municipal",
+  "transactionRef": "VAS3450006",
+  "supportingDoc": "data:image/png;base64,...",
+  "signature": "data:image/png;base64,...",
+  "meansOfId": "data:image/png;base64,...",
+  "passport": "data:image/png;base64,..."
+}
+```
+
+```json Response
+{
+  "statusCode": 200,
+  "status": "OK",
+  "message": "Response ok",
+  "data": {
+    "message": "application received",
+    "code": null,
+    "transactionRef": "VAS00000000",
+    "statusUrl": "baseurl/api/vas/portal/user/status/VAS00000000"
+  },
+  "success": true,
+  "count": 0
+}
+```
+</CodeGroup>
+
+Also returns `403`/`401`/`400` presets in the explorer for compliance failures, auth failures, and
+bad payloads respectively — same general shape as above with `success: false`.
+
+<Info>
+  The statutory BN fee (₦27,000 + ₦500 priority = registration-side cost) is **separate from
+  whatever CAC officially charges via its own DIY portal** (₦21,000 = ₦1,000 name reservation +
+  ₦20,000 registration). These are two different channels, not a discrepancy to reconcile — VAS's
+  price is what actually gets charged to your wallet.
+</Info>
+
+---
+
+## Business Name Partnership {#partnership}
+
+```
+POST /api/vas/engine/pre/business-name/partner
+```
+
+Converts a pending sole-proprietor BN into a partnership by adding a co-proprietor. Free.
+
+**Rules:** blocked while under Commission review; blocked while `queried` (run
+[Application Update](#application-update) first); blocked after `approved`. Max 20 partners; each
+successful call returns a running `proprietorCount`.
+
+<CodeGroup>
+```json Request
+{
+  "transactionRef": "VAS12433454",
+  "proprietorPhonenumber": "07057001119",
+  "proprietorNationality": "Nigerian",
+  "proprietorState": "F.C.T",
+  "proprietorDob": "2024-01-21",
+  "proprietorFirstname": "Joshua",
+  "proprietorSurname": "Adeyemo",
+  "proprietorGender": "MALE",
+  "proprietorEmail": "chylau12@gmail.com",
+  "signature": "Base64 PNG",
+  "meansOfId": "Base64 PNG",
+  "passport": "Base64 PNG",
+  "supportingDoc": "Base64 PNG"
+}
+```
+
+```json Response
+{
+  "statusCode": 200,
+  "status": "OK",
+  "message": "partner registered successfully",
+  "data": {
+    "transactionRef": "partnerTest566",
+    "proprietorCount": 2,
+    "proprietorId": "PAR20241009102112341"
+  },
+  "success": true,
+  "count": 0
+}
+```
+</CodeGroup>
+
+---
+
+## Application Update (query response) {#application-update}
+
+```
+POST /api/vas/engine/pre/query
+```
+
+Responds to a `queried` application with a correction. Free.
+
+<CodeGroup>
+```json Request
+{
+  "transactionRef": "VAS12433454",
+  "proprietor_ID": "Base64 PNG",
+  "proprietor_photograph": "Base64 PNG"
+}
+```
+
+```json Response
+{
+  "statusCode": 200,
+  "status": "OK",
+  "message": "query data received successfully",
+  "data": null,
+  "success": true,
+  "count": 0
+}
+```
+</CodeGroup>
+
+After submitting, confirm it landed by calling [Check Status](#check-status) again — status should
+show `"pending"`.
+
+---
+
+## Check Status {#check-status}
+
+```
+GET /api/vas/portal/user/status/{transactionRef}
+```
+
+Free. Works for both fresh submissions and post-query rechecks.
+
+<CodeGroup>
+```json Response — queried
+{
+  "statusCode": 200,
+  "status": "OK",
+  "message": "status - name registration",
+  "data": {
+    "status": "queried",
+    "transactionRef": "12340909990090",
+    "data": [
+      { "comment": "change your means of id if id isn't clear/visible", "reason": "meansOfId" },
+      { "comment": "your signature isn't visible", "reason": "signature" }
+    ]
+  },
+  "success": true,
+  "count": 0
+}
+```
+
+```json Response — approved
+{
+  "rcNumber": "7046028",
+  "entityType": "BUSINESS NAME",
+  "natureOfBusiness": "pool",
+  "registrationDate": "2024-06-13T18:10:54",
+  "entityName": "Jane Doe",
+  "status": "approved",
+  "transactionRef": "VAS20240613165955158",
+  "address": "limpopo street",
+  "tin": "31746546-0001"
+}
+```
+</CodeGroup>
+
+<Note>
+  The query reasons (`comment`/`reason` pairs) are **structured data**, not free text — map
+  `reason` directly to a form field in your UI rather than trying to parse `comment`.
+</Note>
+
+<Warning>
+  The in-app explorer shows three response-preset tabs here, all labeled `200` — but all three
+  render the *same* `queried` example. This looks like a documentation bug on VAS's side (likely
+  meant to show `queried`/`approved`/`pending` variants). The two examples above (queried, approved)
+  come from the FAQ instead, which does distinguish them. See
+  [Known Issues](/known-issues#registration-services-sandbox-in-app-explorer-quality-issues).
+</Warning>
+
+---
+
+## Certificate Download
+
+```
+POST /api/vas/engine/certificate
+```
+
+Returns a binary PDF blob. Free.
+
+```json Request
+{
+  "rcNumber": "1871004",
+  "transactionRef": "VAS20240130171043"
+}
+```
+
+## Status Report Download
+
+```
+POST /api/vas/engine/certificate/status-report
+```
+
+Returns a binary PDF blob. Free. Same request shape as Certificate Download.
+
+## Bulk switch to priority
+
+```
+POST /api/vas/bn/bulk/priority-service
+```
+
+Retroactively moves already-submitted (non-priority) applications onto the automated track — a
+recovery lever if a customer's registration is stuck in the slow manual queue.
+
+<CodeGroup>
+```json Request
+["8096877858", "VAS2025895999"]
+```
+
+```json Response
+{
+  "statusCode": 200,
+  "status": "OK",
+  "message": "Response ok",
+  "data": { "not-switched": 2, "switched": 2, "already-switched": 2 },
+  "success": true,
+  "count": 0
+}
+```
+</CodeGroup>
+
+Only `switched` is billed — `not-switched` (already approved, can't switch) and `already-switched`
+(already on automated, no-op) cost nothing.

@@ -1,0 +1,92 @@
+---
+title: "Overview & Flow"
+description: "The full Business Name registration lifecycle, end to end"
+---
+
+Business Name (BN) registration is **production-live** on VAS — this is the flow FastCAC actually
+builds against first. It registers a sole-proprietorship or partnership-style legal entity (CAMA
+2020 classification "Business name").
+
+<Info>
+  Business Name registration is **Nigerian-proprietor-only** — a hard constraint, not a soft
+  guideline. `proprietorNationality` must literally be `"Nigerian"` or `"Nigeria"`; a non-Nigerian
+  value fails validation with no recovery path. This is narrower than LLC, which explicitly
+  supports foreign shareholders. Don't offer the BN path to a non-Nigerian user.
+</Info>
+
+## The full lifecycle
+
+```
+1. Name Compliance Check     POST /api/vas/engine/pre/bn-compliance
+                              advanceCheck=true → "proceed to filing" or a structured failure reason
+
+2. Registration Submission   POST /api/vas/engine/pre/business-name
+                              priorityService=true → {transactionRef, statusUrl}
+
+3. Status Monitoring         GET /api/vas/portal/user/status/{transactionRef}
+                              — OR — a callback URL configured once on the dashboard
+
+4. If Queried                POST /api/vas/engine/pre/query with a correction
+                              → status returns to "pending"; priorityService picks it up again
+                              at no extra cost
+
+5. Document Download         POST /api/vas/engine/certificate (cert)
+                              POST /api/vas/engine/certificate/status-report (status report)
+                              — both by transactionRef + rcNumber
+```
+
+## Automated approval — three states, not two
+
+When `priorityService=true` is set, the application lands in one of three states:
+
+<Steps>
+  <Step title="conditional approval (transit state)">
+    Not terminal. A reviewer can still move it to `queried` if they spot an issue, or it clears
+    automatically. **Maximum 48 hours** in this state — after that, it auto-promotes to `approved`
+    with no further reviewer action needed.
+  </Step>
+  <Step title="approved (terminal)">
+    Certificate and status report become downloadable.
+  </Step>
+  <Step title="queried (terminal until corrected)">
+    Structured `{comment, reason}` pairs explain what's wrong — see the
+    [Application Update endpoint](/business-name/endpoints#application-update). Submit a
+    correction to return the application to `pending`, where `priorityService` picks it up again
+    automatically, at no extra cost.
+  </Step>
+</Steps>
+
+<Warning>
+  Treat `conditional approval` as **still pending**, not as success. A callback/polling
+  implementation that terminates on first response risk telling a user their business is
+  registered prematurely — it could still be queried within the 48-hour window.
+</Warning>
+
+## Callback vs. polling
+
+A callback URL is configured **once** on the VAS dashboard (Business registration product page →
+"update callback" button) — not per-request. It streams live status updates for every BN
+registration on the account. Whether it's confirmed to fire on every state transition (`queried`,
+`conditional approval`, `approved`) or only on terminal ones isn't fully confirmed — plan on the
+`GET /api/vas/portal/user/status/{transactionRef}` polling endpoint as the reliable fallback either
+way. All registrations are also visible on the dashboard's own Audit Log page regardless.
+
+## Adding partners
+
+A pending sole-proprietor application can become a partnership via the
+[Add Partners endpoint](/business-name/endpoints#partnership) — up to 20 partners max. This only
+works while the application is still pending: it's blocked once `queried` (correct first) or
+`approved` (no further additions).
+
+## Cost
+
+See [Pricing](/pricing) for the full breakdown — the short version: **₦27,550 per BN registration**
+(₦27,000 registration + ₦500 priority service + ₦50 advanced name-compliance check), assuming the
+recommended always-on `priorityService` + `advanceCheck` flags.
+
+<Warning>
+  **Always confirm pricing against the production dashboard**
+  (`vas.cac.gov.ng/user/products_BN` → Pricing tab), not sandbox. VAS confirmed 2026-07-18 that the
+  sandbox pricing tables are stale (they showed ₦16,500 instead of the real ₦27,000) — production
+  is the authoritative source until VAS fixes sandbox.
+</Warning>

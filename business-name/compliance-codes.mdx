@@ -1,0 +1,41 @@
+---
+title: "Compliance Response Codes"
+description: "The full contract the advance name-compliance check returns — build your UI against this"
+---
+
+When `advanceCheck=true` is set on the [Name Compliance Check](/business-name/endpoints#name-compliance-check),
+the response's `message` field is always one of these codes, alongside a `success` boolean and
+(when relevant) `recommendedActions`/`suggestedNames`/`similarNames`.
+
+| Code | Message | Meaning |
+|---|---|---|
+| `00` | `PROCEED_TO_FILING` | Name meets all requirements, `success: true`, can register as-is |
+| `01` | `OFFENSIVE_LANGUAGE` | Contains offensive/hateful language — `recommendedActions` names the flagged word(s) |
+| `02` | `QUALIFIER_NOT_FOUND` | Missing a qualifier (e.g. "ventures", "concepts", "enterprises", "beauty", "fashion", "services", "hub", "biz") — `recommendedActions` suggests options |
+| `03` | `BUSINESS_NAME_REQUIRES_CERTIFICATE` | `success: true` (can proceed to filing) but a **proficiency certificate must be attached as a supporting doc** — the name itself triggered this |
+| `04` | `BUSINESS_LINE_REQUIRES_CERTIFICATE` | Same as `03`, but triggered by the *line of business* rather than the name |
+| `05` | `PROHIBITED_BUSINESS_NAME` | Name contains a prohibited word — see [Naming Rules](/business-name/naming-rules) |
+| `06` | `PROHIBITED_BUSINESS_LINE` | Line of business contains a prohibited word |
+| `07` | `BUSINESS_NAME_EXISTS` | Exact match on CAC's DB or on VAS's own pending-approval DB |
+| `08` | `BUSINESS_NAME_TOO_SIMILAR` | Not sufficiently dissimilar from an existing name — check `similarNames`/`similarityScorePercentage` |
+| `10` | `SINGLE_WORD` | A business name can't be a single word |
+| `11` | `RELIGIOUS_CONNOTATION` | Cannot register a name with religious connotation — this is an outright block, not a "needs approval" case |
+| `12` | `SPECIAL_CHARACTERS` | Contains disallowed special characters |
+| `13` | `MULTIPLE_QUALIFIERS` | More than one qualifier present (e.g. both "ventures" and "enterprises") |
+| `14` | `NON_TRAILING_QUALIFIER` | A qualifier that must be trailing appears elsewhere in the name |
+
+<Note>
+  There's no `09` in VAS's own code table — confirmed by reading their FAQ directly, not a
+  transcription gap here. The sequence genuinely jumps `08` → `10`.
+</Note>
+
+## Practical use
+
+- Codes `03`/`04` are the only ones where `success: true` but you still need to act — attach a
+  proficiency certificate as `supportingDoc` before submitting, don't treat this as a pass/fail
+  gate the way you would `05`/`06`/`07`/etc.
+- The response also includes a `complianceScorePercentage`. VAS's own FAQ recommends treating
+  **≥75% as a healthy target** — but explicitly notes this threshold **isn't a rule the Commission
+  itself enforces**, just an empirical correlation VAS has observed. Show it to users as a soft
+  "how healthy is this application" signal, not a hard gate — a name with `success: true` but a
+  score under 75% can still be submitted, just carries more query risk.

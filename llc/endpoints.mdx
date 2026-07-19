@@ -1,0 +1,315 @@
+---
+title: "Endpoints"
+description: "Every LLC registration endpoint from VAS's Postman collection, organized by flow"
+---
+
+All endpoints use base URL `https://vasapp.oasisproducts.ng` (sandbox) or
+`https://vasapp.cac.gov.ng` (production) and require the `X_API_KEY` header. Source: VAS's
+[externally-hosted Postman collection](https://documenter.getpostman.com/view/28820824/2sBXqGsMzz)
+— see [Known Issues](/known-issues) for quality caveats before copying examples verbatim.
+
+## Forward Flow
+
+### Register affiliate — individual
+
+```
+POST /api/vas/llc/affiliates
+```
+
+Adds a director, shareholder, witness, or secretary. The total sum of shares held by shareholders
+must equal the share capital registered elsewhere in the flow.
+
+<CodeGroup>
+```json Request
+{
+  "transactionRef": "{{transactionRef}}",
+  "individual": {
+    "surname": "{{surname}}",
+    "firstname": "{{firstname}}",
+    "otherName": "Anthony",
+    "occupation": "Software Engineer",
+    "nationality": "Nigerian",
+    "dob": "{{dob}}",
+    "gender": "MALE",
+    "email": "chinedu.okafor@example.com",
+    "phoneNumber": "08023456789",
+    "affiliateType": ["{{affiliateType}}"],
+    "serviceAddress": {
+      "country": "Nigeria", "state": "Lagos", "lga": "Ikeja", "city": "Ikeja",
+      "streetInfo": "15A Allen Avenue"
+    },
+    "residentialAddress": {
+      "country": "Nigeria", "state": "Lagos", "lga": "Eti-Osa", "city": "Lekki",
+      "streetInfo": "45B Admiralty Way"
+    },
+    "meansOfId": { "idType": "NIN", "idNumber": "12345678901", "image": "<base64>" },
+    "signature": "<base64>",
+    "passport": "<base64>",
+    "isShareholder": "{{isShareholder}}",
+    "shareAllotment": {
+      "allottedOrdinaryShares": "{{allottedOrdinaryShares}}",
+      "allottedPreferenceShares": "{{allottedPreferenceShares}}"
+    }
+  }
+}
+```
+
+```json Response
+{
+  "statusCode": 200,
+  "status": "OK",
+  "message": "Affiliate created",
+  "data": {
+    "affiliateKey": "IND202604141610107540000769",
+    "nextStepUrl": "https://vasapp.oasisproducts.ng/api/vas/llc/register"
+  },
+  "success": true
+}
+```
+</CodeGroup>
+
+### Register PSC
+
+```
+POST /api/vas/llc/psc
+```
+
+Declares a Person with Significant Control — anyone who directly or indirectly controls more than
+5% of the company's shares, among other criteria.
+
+<CodeGroup>
+```json Request
+{
+  "transactionRef": "{{transactionRef}}",
+  "affiliateKey": "{{affiliateKey}}",
+  "ownsDirectShares": true,
+  "directShareDetails": {
+    "sharePercent": "{{sharePercent}}",
+    "legalOwners": [{ "affiliateKey": "{{affiliateKey}}", "sharePercent": "{{sharePercent}}" }]
+  },
+  "ownsIndirectShares": false,
+  "isPep": false,
+  "isPscAffiliated": false,
+  "canChangeDirectors": true,
+  "hasSignificantControlOfCompany": true
+}
+```
+
+```json Response
+{
+  "statusCode": 200,
+  "status": "OK",
+  "message": "PSC created successfully",
+  "data": {
+    "affiliateKey": "PSC202604231259480790000334",
+    "nextStepUrl": "https://vasapp.oasisproducts.ng/api/vas/llc/register"
+  },
+  "success": true
+}
+```
+</CodeGroup>
+
+A PSC can also own **indirect** shares — add `ownsIndirectShares: true` with an
+`indirectShareDetails` block of the same shape, and can be flagged as a Politically Exposed Person
+(`isPep: true` + a `pepDetails` block: `reasonForPep`, `pepType`, `roleOfPep`, `officeOfPep`) or as
+affiliated with another PSC entity (`isPscAffiliated: true` + `pscAffiliateDetails`: `entityName`,
+`entityNumber`, `isAffiliatePlc`, `plcDetails`, `isAffiliateStateOwned`).
+
+### Submit registration
+
+```
+POST /api/vas/llc/register
+```
+
+Finalizes the staged affiliates/PSC/shares/company data into a real submission.
+
+<CodeGroup>
+```json Request
+{ "transactionRef": "{{transactionRef}}" }
+```
+
+```json Response (abridged)
+{
+  "id": "69ea1f986557e686404f5d60",
+  "registration": {
+    "transactionRef": "VAS202604141336225370",
+    "proposedName": "amadu and son limited",
+    "reservationCode": "VAS177617265588",
+    "companyType": "PRIVATE_COMPANY_LIMITED_BY_SHARES",
+    "address": [
+      { "state": "Lagos", "lga": "Ikeja", "city": "Ikeja", "street": "15A Adeola Odeku Street", "type": "REGISTERED_ADDRESS" },
+      { "state": "Lagos", "lga": "Eti-Osa", "city": "Victoria Island", "street": "45B Ahmadu Bello Way", "type": "HEAD_OFFICE_ADDRESS" }
+    ]
+  },
+  "shares": {
+    "ordinaryIssuedShare": 1000000,
+    "shareCapital": 1000000,
+    "shareCapitalInWords": "One Million Naira, Zero Kobo"
+  },
+  "affiliates": ["... full affiliate objects, one per director/shareholder/witness/PSC ..."],
+  "statutoryPayment": {
+    "paid": true,
+    "companyType": "PRIVATE_COMPANY_LIMITED_BY_SHARES",
+    "shareCapital": 2000000,
+    "rate": 10000,
+    "statutoryFee": 20000
+  },
+  "stampDutyPayment": null,
+  "queries": [],
+  "queryCount": 0,
+  "complianceCheck": {
+    "aiComplianceCheck": { "status": "approved" }
+  }
+}
+```
+</CodeGroup>
+
+<Note>
+  The full response is large — it echoes back the entire staged registration (company, shares,
+  every affiliate with per-affiliate AI compliance results) plus payment and query state. Treat
+  this as the canonical "current state of the registration" object; the abridged version above
+  keeps the shape, not every field.
+</Note>
+
+---
+
+## Utilities
+
+### Get nature of business
+
+```
+GET /api/vas/llc/nob/{categoryId}
+```
+
+Returns valid nature-of-business strings for a category — use to populate a dropdown rather than
+free-text entry.
+
+### Get PSC
+
+```
+GET /api/vas/llc/psc/{transactionRef}
+```
+
+Returns all PSCs declared for a transaction, including their share/PEP/affiliation details.
+
+### Status check
+
+```
+GET /api/vas/llc/status/{transactionRef}
+```
+
+<CodeGroup>
+```json Request
+{ "transactionRef": "VAS202509181254148310" }
+```
+
+```json Response — pending
+{
+  "statusCode": 200,
+  "status": "OK",
+  "message": "status - name registration",
+  "data": {
+    "status": "PENDING",
+    "transactionRef": "VAS202604141336225370",
+    "data": {
+      "entityName": "amadu and son limited",
+      "rcNumber": null, "entityType": null, "registrationDate": null, "tin": null
+    },
+    "affiliates": null
+  },
+  "success": true
+}
+```
+</CodeGroup>
+
+### Get company / Get shares
+
+```
+GET /api/vas/llc/company/{transactionRef}
+GET /api/vas/llc/shares/{transactionRef}
+```
+
+Read-only snapshots of the staged company record and share allocation. **No documented POST
+endpoint creates these records directly** in the material we sourced — see
+[Known Issues](/known-issues#llc-postman-collection-quality-issues) before assuming the flow above
+is the complete picture.
+
+---
+
+## Backward Flow
+
+### Delete affiliate
+
+```
+DELETE /api/vas/llc/affiliates
+```
+
+<Warning>
+  VAS's own example uses `http://localhost:8990` as the host and snake_case field names
+  (`affiliate_id`, `transaction_ref`) — inconsistent with every other endpoint in this suite. The
+  path is almost certainly correct against the real base URL; treat the localhost reference as a
+  leftover dev artifact.
+</Warning>
+
+```json Request
+{ "affiliate_id": "1234", "transaction_ref": "35162" }
+```
+
+Returns no response body.
+
+### Update PSC
+
+```
+PUT /api/vas/llc/psc
+```
+
+Same `http://localhost:8990` caveat as above. Full request shape matches
+[Register PSC](#register-psc), keyed by `affiliateKey` to identify which PSC record to update.
+Returns no response body.
+
+### Update registration
+
+```
+PUT /api/vas/llc/register
+```
+
+Same shape as [Submit registration](#submit-registration) — re-submits after corrections.
+
+### Get RRR (Remita Retrieval Reference)
+
+```
+POST /api/vas/llc/stamp-duty/rrr
+```
+
+Generates the RRR needed for the customer to pay stamp duty via Remita. **Only works after the
+registration itself is approved.**
+
+<CodeGroup>
+```json Request
+{ "transactionRef": "{{transactionRef}}", "phoneNumber": "{{phoneNumber}}" }
+```
+
+```json Response — error, not yet approved
+{
+  "statusCode": 400,
+  "status": "BAD_REQUEST",
+  "message": "unable to process stamp duty payment, application not yet approved for stamp duty payment",
+  "data": null,
+  "success": false
+}
+```
+</CodeGroup>
+
+### Verify stamp duty payment
+
+```
+POST /api/vas/llc/stamp-duty/verify
+```
+
+Confirms the customer's Remita payment against the RRR, triggers certificate generation.
+
+```json Request
+{ "transactionRef": "{{transactionRef}}", "rrr": "{{rrr}}" }
+```
+
+Returns no response body on success.

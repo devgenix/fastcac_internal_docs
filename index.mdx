@@ -1,0 +1,77 @@
+---
+title: "Introduction"
+description: "Internal reference for VAS (Oasis Product)'s API — the vendor FastCAC uses to submit CAC registrations"
+---
+
+This is FastCAC's **internal, consolidated reference** for the VAS API — the third-party vendor
+(Oasis Product) that FastCAC integrates with to submit Business Name and LLC registrations to CAC
+(Corporate Affairs Commission).
+
+<Warning>
+  This documents a **vendor's API**, not FastCAC's own. It exists because VAS's own documentation
+  is scattered across three separate places (an in-app interactive explorer, a public FAQ site, and
+  an externally-hosted Postman collection for LLC) with real gaps and inconsistencies between them.
+  This site consolidates all three into one place with pricing attached — see
+  [Known issues & doc quality gaps](/known-issues) for what's genuinely uncertain or contradictory
+  in VAS's own material.
+</Warning>
+
+## Why this exists
+
+Building against VAS meant cross-referencing four different sources every time:
+
+1. **The sandbox dashboard's interactive API explorer** (`vas.oasisproducts.ng/documentation-page`)
+   — resolves `{BaseUrl}` placeholders to real URLs, shows request/response examples per endpoint.
+2. **The production dashboard's equivalent** (`vas.cac.gov.ng`, behind login → Products & Services →
+   Registration Services → Business Name → Demo product) — same content, different host, easy to
+   confuse with the sandbox.
+3. **The public FAQ** (`vas.cac.gov.ng/FAQs`, mirrored at `vas.oasisproducts.ng/FAQs`) — the *only*
+   place several critical details are documented at all: the three-state automated-approval flow,
+   the full compliance response-code table, the authoritative prohibited-words list, and the
+   Nigerian-proprietor-only constraint on Business Name.
+4. **An externally-hosted Postman collection** for LLC/Company registration specifically — linked
+   from the dashboard's "Company Registration" entry via an "Open Postman Docs" button, not part of
+   the in-app explorer at all.
+
+None of these four cross-reference each other, and pricing lives in a fifth place entirely (the
+dashboard's pricing tab, **on production specifically — see the warning below**) with no
+endpoint-level linkage. This site merges all of it.
+
+<Warning>
+  **Pricing must come from the production dashboard, not sandbox.** VAS confirmed 2026-07-18 that
+  `vas.oasisproducts.ng/pricing` (sandbox) is currently stale — it showed ₦16,500 for Business Name
+  registration when production (`vas.cac.gov.ng/user/products_BN` → Pricing tab) correctly shows
+  ₦27,000. See [Pricing](/pricing) for the full corrected breakdown and
+  [Known Issues](/known-issues) for the discovery story.
+</Warning>
+
+## What's covered
+
+<CardGroup cols={2}>
+  <Card title="Business Name Registration" icon="building-columns" href="/business-name/overview">
+    Compliance check, submission, status, query/update, certificate download — the flow that's
+    production-live today.
+  </Card>
+  <Card title="LLC (Company) Registration" icon="building" href="/llc/overview">
+    Affiliates, PSC (Persons with Significant Control), share allocation, stamp duty via
+    Remita — beta, but vendor-confirmed production-ready.
+  </Card>
+  <Card title="Validation Services" icon="magnifying-glass" href="/validation/overview">
+    KYB lookups for an *existing* company — VRC consent mechanism, 15 documented endpoints, 33
+    priced line items (real gap between the two — see Known Issues).
+  </Card>
+  <Card title="Pricing" icon="naira-sign" href="/pricing">
+    All 56 priced line items across BN, LLC, Validation, and Annual Return Services, in one table.
+  </Card>
+</CardGroup>
+
+## Environments
+
+| Environment | Dashboard (login, pricing, wallet, API keys) | API base URL |
+|---|---|---|
+| Sandbox | `https://vas.oasisproducts.ng` | `https://vasapp.oasisproducts.ng` |
+| Production | `https://vas.cac.gov.ng` | `https://vasapp.cac.gov.ng` |
+
+The dashboard and API hosts are **different domains** — a real, easy-to-make mistake. Auth is a
+single header, `X_API_KEY`, on every request. See [Quickstart](/quickstart) for the full
+authentication story, including a real gotcha around how VAS-generated keys are shaped.

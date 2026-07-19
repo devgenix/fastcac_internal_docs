@@ -1,0 +1,245 @@
+---
+title: "Endpoints"
+description: "All 15 documented Validation Services endpoints, plus the 18 priced-but-undocumented ones"
+---
+
+All endpoints use base URL `https://vasapp.oasisproducts.ng` (sandbox) or
+`https://vasapp.cac.gov.ng` (production) and require the `X_API_KEY` header. Most require a `vrc`
+(see [VRC overview](/validation/overview)) rather than a bare `rc_number` — check each endpoint's
+request parameters below.
+
+## Documented endpoints (15)
+
+### VRC — Get company
+
+```
+POST /api/vas/validation/secure/company
+```
+
+<CodeGroup>
+```json Request
+{ "vrc": "5OBZex7WxA" }
+```
+
+```json Response
+{
+  "statusCode": 200, "status": "OK", "message": "company data",
+  "data": {
+    "rc_number": "63292863",
+    "entity_name": "Holland Vibes homes",
+    "entity_type": "INCORPORATED_TRUSTEE",
+    "registration_date": "Wed Mar 12 10:10:02 GMT 2025",
+    "objectives": ["To provide services to the public", "To deal with General Contractors and merchandise"]
+  },
+  "success": true, "count": 0
+}
+```
+</CodeGroup>
+
+### VRC — Get company affiliates
+
+```
+POST /api/vas/validation/secure/company-affiliates
+```
+
+Returns directors/shareholders with per-affiliate detail: name, gender, type, phone, DOB,
+nationality, address, and whether they're a corporate affiliate (`is_corporate` + `corporate_name`
++ `rc_number`).
+
+### VRC — Get company share capital
+
+```
+POST /api/vas/validation/secure/share-capital
+```
+
+Returns `share_capital`, `share_capital_in_words`, `date_of_incorporation`, `company_status`.
+
+### VRC — Get company share distribution
+
+```
+POST /api/vas/validation/secure/shares-distribution
+```
+
+Returns per-shareholder `shares_allotted` and `share_type` (e.g. `ORDINARY`).
+
+### VRC — Get company assets
+
+```
+POST /api/vas/validation/secure/assets
+```
+
+Returns registered charges: `type` (`ASSET`), `amount`, `amount_in_words`, `asset` description,
+`holding_bank`.
+
+### VRC — Get company certificate
+
+```
+POST /api/vas/validation/secure/certificate
+```
+
+Returns a binary PDF blob (the certified true certificate as issued by CAC).
+
+### VRC — Get company status report
+
+```
+POST /api/vas/validation/secure/status-report
+```
+
+Returns a binary PDF blob.
+
+### VRC — Get company winding up
+
+```
+POST /api/vas/validation/secure/wind-up
+```
+
+<CodeGroup>
+```json Request
+{ "vrc": "08yvysra2n" }
+```
+
+```json Response
+{
+  "statusCode": 200, "status": "OK", "message": "winding up info by company",
+  "data": {
+    "rc_number": "66808794", "company_name": "J&S group",
+    "winding_up_type": "WINDING UP", "winding_up_stage": "COMPLETED",
+    "publication": [{ "type": "VOLUNTARY_BY_MEMBERS", "name": "NIGERIAN NEWSDIRECT", "date": "2024-07-04T04:08:04.330+00:00", "page": 1 }]
+  },
+  "success": true, "count": 1
+}
+```
+</CodeGroup>
+
+### Get company using TIN
+
+```
+POST /api/vas/validation/tin/company
+```
+
+<Warning>
+  VAS's own example response for this endpoint is copy-pasted from the winding-up endpoint —
+  clearly wrong (`"message": "winding up info by company"` with winding-up-shaped data). The
+  request shape (`{"tin": "..."}`) and URL are correct; don't trust the example response body.
+</Warning>
+
+### Generate TIN
+
+```
+POST /api/vas/validation/tin/generate
+```
+
+Used when [Get Company TIN](#get-company-tin) returns `null` — no TIN exists yet for the entity.
+
+<CodeGroup>
+```json Request
+{
+  "rc_number": "001", "entity_type": "COMPANY",
+  "address": "string", "state": "string", "lga": "string", "phone": "string", "email": "string"
+}
+```
+
+```json Response
+{ "statusCode": 200, "status": "OK", "message": "tin generated successfully", "data": "75494407-0001", "success": true }
+```
+</CodeGroup>
+
+<Note>
+  Only `rc_number` and `entity_type` are required; the rest are optional depending on entity
+  details. Worth cross-checking against the "RC = TIN automatically from 2026-01-01" regulatory
+  claim elsewhere — this endpoint's existence suggests a TIN record may still need an explicit
+  generation step even if RC legally serves as TIN.
+</Note>
+
+### Get company by name
+
+```
+POST /api/vas/validation/company/name
+```
+
+```json Request
+{ "rc_number": "35147935", "entity_name": "JG Group" }
+```
+
+### Get company by RC number
+
+```
+POST /api/vas/validation/company/rc
+```
+
+```json Request
+{ "rc_number": "35147935" }
+```
+
+### Get company line of business
+
+```
+POST /api/vas/validation/line-of-business
+```
+
+```json Request
+{ "rc_number": "35147935", "entity_type": "INCORPORATED_TRUSTEE" }
+```
+
+Response `data` is a plain array of line-of-business strings.
+
+### Get company TIN {#get-company-tin}
+
+```
+POST /api/vas/validation/tin
+```
+
+```json Request
+{ "rc_number": "35147935", "entity_type": "INCORPORATED_TRUSTEE" }
+```
+
+Returns full company data plus a `tin` field — `null` if no TIN has been generated yet (see
+[Generate TIN](#generate-tin)).
+
+### Business validation single service (premium)
+
+```
+POST /api/vas/validation/single-service
+```
+
+Returns everything in one call: entity info, all affiliates (with PSC/shareholder detail), share
+details, shareholder allocation. The most expensive single endpoint at ₦7,500 — see
+[Pricing](/pricing) — but replaces what would otherwise be several separate calls.
+
+```json Request
+{ "rc_number": "18967", "entity_type": "COMPANY" }
+```
+
+---
+
+## Priced but undocumented (18)
+
+These appear in the pricing catalog but have **no documented endpoint URL** anywhere in VAS's
+sandbox explorer, production explorer, FAQ, or the LLC Postman collection. Confirm the exact
+integration contract with VAS directly before building against any of these — don't guess a URL
+from the label.
+
+| Priced item | Price | Likely relationship to a documented endpoint |
+|---|---|---|
+| GET CERTIFICATE | ₦100.00 | Possibly a cheaper, non-VRC variant of [VRC — Get company certificate](#vrc-get-company-certificate) (₦7,500) |
+| GET STATUS REPORT | ₦100.00 | Possibly a cheaper variant of [VRC — Get company status report](#vrc-get-company-status-report) (₦7,500) |
+| GET WIND UP INFORMATION | ₦60.00 | Possibly a cheaper variant of [VRC — Get company winding up](#vrc-get-company-winding-up) (₦7,500) |
+| GET SHARE CAPITAL | ₦7,500.00 | Possibly a non-VRC variant of the VRC share-capital endpoint — same price, unclear differentiation |
+| GET SHARE DISTRIBUTION | ₦7,500.00 | Possibly a non-VRC variant of the VRC share-distribution endpoint — same price |
+| VRC GET COMPANY | ₦100.00 | Possibly the same as [VRC — Get company](#vrc-get-company), priced far below its sibling VRC endpoints (inconsistent) |
+| VRC COMPANY SHARE DISTRIBUTION | ₦7,500.00 | Likely the same as [VRC — Get company share distribution](#vrc-get-company-share-distribution) under a slightly different label |
+| GET ALL COMPANY AFFILIATES | ₦500.00 | Possibly a cheaper variant of [VRC — Get company affiliates](#vrc-get-company-affiliates) (₦7,500) |
+| GET AFFILIATE COMPANIES INFO | ₦400.00 | No documented equivalent found |
+| GET COMPANIES OF AN INDIVIDUAL | ₦160.00 | No documented equivalent found |
+| GET COMPANY CHARGES | ₦410.00 | Possibly related to [VRC — Get company assets](#vrc-get-company-assets) (charges/assets are similar concepts) |
+| GET COMPANY OBJECTIVES | ₦100.00 | Possibly a subset of [VRC — Get company](#vrc-get-company)'s `objectives` field, as its own endpoint |
+| GET ANNUAL RETURNS | ₦430.00 | Oddly priced under Validation Services rather than Annual Return Services — no documented equivalent |
+| OPEN AFFILIATE SEARCH | ₦500.00 | No documented equivalent found |
+| OPEN COMPANY SEARCH | ₦500.00 | No documented equivalent found |
+| POST GENERATE TIN | ₦1,000.00 | Possibly a duplicate catalog entry for [Generate TIN](#generate-tin) (priced ₦500 elsewhere) |
+| GET COMPANY (2nd entry) | ₦0.00 | Duplicate catalog row alongside the ₦100 "GET COMPANY" entry |
+| GET COMPANY TIN (2nd entry) | ₦500.00 | Duplicate catalog row alongside the ₦200 "GET COMPANY TIN" entry |
+
+See [Known Issues](/known-issues#pricing-catalog-vs-documented-endpoints--a-real-unresolved-gap)
+for the full discussion of why this gap likely exists (a plausible cheap-public vs.
+expensive-VRC-gated pattern, unconfirmed).

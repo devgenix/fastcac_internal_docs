@@ -1,0 +1,91 @@
+---
+title: "Authentication & Environments"
+description: "Getting a key, the header format, and a real gotcha with how VAS keys are shaped"
+---
+
+## Environments
+
+<Warning>
+  The dashboard URL and the API base URL are **different hosts**. Logging in, checking pricing,
+  and generating a key all happen on the dashboard host — but your actual API calls go to the
+  `vasapp.` host. Mixing these up is the single easiest mistake to make.
+</Warning>
+
+| Environment | Dashboard | API base URL |
+|---|---|---|
+| Sandbox | `https://vas.oasisproducts.ng` | `https://vasapp.oasisproducts.ng` |
+| Production | `https://vas.cac.gov.ng` | `https://vasapp.cac.gov.ng` |
+
+The sandbox API base URL is confirmed directly by VAS (Chukwukere, Oasis Product) and independently
+verified live: `POST /api/vas/engine/pre/bn-compliance` returns a real `200` with genuine
+similarity/compliance scoring for a novel name, and `403 "Name exist"` for a taken one.
+
+## Getting an API key
+
+<Steps>
+  <Step title="Log into the dashboard">
+    Sandbox: `vas.oasisproducts.ng`. Production: `vas.cac.gov.ng`. These are separate accounts —
+    sandbox access and production access are granted independently.
+  </Step>
+  <Step title="Generate a key">
+    Sidebar → **API Management** → **Api Configuration** → **Generate API Key**. The plaintext key
+    is shown **exactly once**, in the field, immediately after generation. Copy it then — reloading
+    the page replaces the display with a bcrypt-style hash placeholder (e.g.
+    `$2a$10$LMx1hxXHcROaQwaf8...`) that **is not the usable key**, just a "a key exists" indicator.
+  </Step>
+  <Step title="Store it exactly as generated">
+    See the warning below before you put this anywhere near a shell script.
+  </Step>
+</Steps>
+
+## Making a request
+
+Every request needs exactly one auth header:
+
+```bash
+curl -X POST "https://vasapp.oasisproducts.ng/api/vas/engine/pre/bn-compliance" \
+  -H "X_API_KEY: <your-key>" \
+  -H "Content-Type: application/json" \
+  -d '{"proposedName":"Adaeze Fashion Ventures","lineOfBusiness":"fashion design"}'
+```
+
+A real, structured `401 Unauthorized` (JSON body with `timestamp`/`path`/`status`/`requestId`)
+means the header name and host are right but the key value is wrong. A blank-body `401` typically
+means the header name itself wasn't recognized (wrong casing, wrong name).
+
+<Warning>
+  **VAS keys are bcrypt-hash-shaped** (`$2a$10$<22-char salt><31-char hash>`) — full of
+  `$`-prefixed segments like `$2a`, `$10`. If you load the key into a shell variable via
+  `source .env` or similar, **bash silently shell-expands those `$` sequences as variable
+  references — even inside double quotes** — corrupting a 60-character key down to a stray single
+  character before it ever reaches `curl`. This produces a misleading chain of spurious `401`s
+  against keys that are actually completely valid.
+
+  **Load key values with a real parser instead** — Python's `open(".env").read()` + regex, or
+  `python-dotenv` — never bash `source`, whenever a secret might start with `$`.
+
+  ```python
+  import re, urllib.request, json
+
+  content = open(".env").read()
+  key = re.search(r'^VAS_API_KEY=(.*)$', content, re.M).group(1).strip().strip('"')
+
+  req = urllib.request.Request(
+      "https://vasapp.oasisproducts.ng/api/vas/engine/pre/bn-compliance",
+      data=json.dumps({"proposedName": "...", "lineOfBusiness": "..."}).encode(),
+      headers={"X_API_KEY": key, "Content-Type": "application/json"},
+      method="POST",
+  )
+  ```
+</Warning>
+
+## Wallet & billing
+
+VAS is prepaid — top up via the dashboard's **Wallet** page before calling anything with a nonzero
+price (see [Pricing](/pricing)). Insufficient balance returns `403`. There's no programmatic
+top-up API; funding is manual, dashboard-only.
+
+<Tip>
+  **Sandbox-only test card** (confirmed from the VAS FAQ, safe to use — this is not a real payment
+  instrument): Interswitch card `4000 0000 0000 2503`, expiry `03/50`, CVV `111`, OTP `1234`.
+</Tip>

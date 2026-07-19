@@ -1,0 +1,115 @@
+---
+title: "Known Issues & Doc Quality Gaps"
+description: "Real inconsistencies and gaps found in VAS's own documentation while consolidating it here"
+---
+
+This page exists so nobody re-discovers the same confusion twice. Everything below was found by
+directly reading VAS's own documentation sources (in-app explorers, FAQ, Postman collection) and
+cross-referencing them — these are gaps and inconsistencies in **VAS's** material, not in FastCAC's
+usage of it.
+
+## Sandbox pricing is stale — production is the source of truth
+
+<Danger>
+  **This bit us directly.** This entire site's pricing figures were originally sourced from the
+  sandbox dashboard (`vas.oasisproducts.ng/pricing`), which showed **₦16,500** for Business Name
+  registration. Confirmed directly by Chukwukere (VAS/Oasis) on 2026-07-18: sandbox pricing is
+  stale and scheduled for a fix. The real, production-confirmed figure
+  (`vas.cac.gov.ng/user/products_BN` → Pricing tab) is **₦27,000** — a ~64% difference that fed
+  directly into wrong margin math for a full session before being caught. **LLC pricing was also
+  separately flagged as wrong**, though sandbox and production agree with each other there (both
+  show the same, apparently-also-incorrect numbers) — no corrected LLC figures exist yet.
+
+  **Rule going forward: always read pricing from the production dashboard, never sandbox.** If a
+  number in this site's [Pricing](/pricing) page ever looks suspiciously round or doesn't match
+  what you see live on production, re-verify against production immediately rather than trusting
+  what's written here — pricing pages change, this reference doesn't update itself.
+</Danger>
+
+## Security
+
+<Danger>
+  **VAS's own Postman documentation leaks a live-looking API key** in multiple curl examples across
+  the LLC registration suite (e.g. in the `register psc`, `get nature of business`, `update psc`,
+  and `delete affiliate` examples). It's a real bcrypt-shaped key
+  (`$2a$10$...`), not an obvious placeholder. **Never use it.** Generate your own key from the
+  dashboard instead. Also worth knowing: the production `vas.cac.gov.ng` JS bundle has historically
+  exposed internal backend IPs over plain HTTP — only ever call the documented public HTTPS hosts.
+</Danger>
+
+## LLC Postman collection quality issues
+
+- **Two endpoints reference `http://localhost:8990`** as their base URL instead of
+  `{{base_url}}` — `delete affiliate` (`DELETE /api/vas/llc/affiliates`) and `update psc`
+  (`PUT /api/vas/llc/psc`). This is clearly a leftover dev artifact from whoever authored the
+  collection. The paths themselves are almost certainly correct relative to the real
+  `{{base_url}}` (sandbox/production hosts) — just mentally substitute the host.
+- **`stamp duty payment` (`POST /api/vas/llc/stamp-duty/verify`) uses `{{llc_staging}}`** as its
+  base URL variable instead of `{{base_url}}` — an inconsistent environment-variable name, not a
+  third real environment. Treat it the same as `{{base_url}}`.
+- **Field naming is inconsistent across the LLC suite**: most endpoints use camelCase
+  (`transactionRef`, `affiliateKey`), but `delete affiliate`'s request body uses snake_case
+  (`affiliate_id`, `transaction_ref`). Don't assume one convention applies everywhere — check each
+  endpoint's actual example payload.
+- **The "Forward Flow" doesn't show every step needed to reconstruct a full registration.** The
+  final `submit registration` response includes a full `shares` object and `registration.address`
+  array, but no POST endpoint that *creates* those (only `GET /api/vas/llc/shares/{transactionRef}`
+  and `GET /api/vas/llc/company/{transactionRef}` are documented, implying corresponding creation
+  calls exist but weren't captured in the collection as browsed). If you're implementing the LLC
+  flow, confirm these missing creation steps directly with VAS before assuming the documented
+  sequence (affiliates → PSC → register) is complete.
+
+## Registration Services (sandbox in-app explorer) quality issues
+
+- **The "Check Status API" endpoint page shows three response-preset tabs all labeled `200`**,
+  but all three display the *identical* `queried`-status example body — almost certainly meant to
+  show `queried`/`approved`/`pending` variants but wired to the same example by mistake. Don't
+  assume these represent three genuinely different response shapes; refer to the FAQ's separate
+  `queried` and `approved` examples instead (see [Business Name endpoints](/business-name/endpoints)).
+- **The "GET - COMPANY USING TIN" endpoint's example response is copy-pasted from the winding-up
+  endpoint** (`"message": "winding up info by company"` with winding-up-shaped data, not
+  company-by-TIN-shaped data). The request payload (`{"tin": "..."}`) and URL
+  (`/api/vas/validation/tin/company`) both look correct; only the example response body is
+  mismatched.
+
+## Pricing catalog vs. documented endpoints — a real, unresolved gap
+
+The Validation Services pricing tab lists **33 priced line items**, but the in-app interactive
+explorer documents only **15 concrete endpoints**. See the full breakdown on the
+[Validation Services endpoints](/validation/endpoints) page, but the short version:
+
+- Every VRC-prefixed endpoint (`VRC - GET COMPANY ...`) is priced at a flat **₦7,500**, except
+  `VRC GET COMPANY` (no hyphen, in the pricing table) at **₦100** — inconsistent with its sibling
+  VRC endpoints, and the naming itself doesn't quite match the documented `VRC - GET COMPANY`
+  endpoint (hyphen present in the explorer, absent in pricing).
+- There appear to be **cheaper, non-VRC-gated equivalents** of several VRC endpoints — e.g. `GET
+  CERTIFICATE` (₦100) vs. `VRC - GET COMPANY CERTIFICATE` (₦7,500), `GET STATUS REPORT` (₦100) vs.
+  `VRC - GET COMPANY STATUS REPORT` (₦7,500), `GET WIND UP INFORMATION` (₦60) vs.
+  `VRC - GET COMPANY WINDING UP` (₦7,500), `GET SHARE CAPITAL`/`GET SHARE DISTRIBUTION` (₦7,500 —
+  same price as their VRC counterparts, no discount here). **None of these cheaper variants have a
+  documented URL anywhere we found** — they exist in the pricing catalog only. Plausible
+  explanation: the VRC-gated versions return private/consent-gated data per the FAQ's NDPA
+  rationale, while the cheaper ones return public-only data — but this is inference, not confirmed.
+- **`GET COMPANY` is priced twice** (₦100.00 and ₦0.00) and **`GET COMPANY TIN` is priced twice**
+  (₦200.00 and ₦500.00) — duplicate catalog rows with different prices, source of truth unclear.
+- Several priced items have no documented endpoint at all: `GET AFFILIATE COMPANIES INFO` (₦400),
+  `GET ALL COMPANY AFFILIATES` (₦500 — distinct from the priced-₦7,500 `VRC - GET COMPANY
+  AFFILIATES`), `GET ANNUAL RETURNS` (₦430, oddly priced under the *Validation Services* tab rather
+  than *Annual Return Services*), `GET COMPANIES OF AN INDIVIDUAL` (₦160), `GET COMPANY CHARGES`
+  (₦410), `GET COMPANY OBJECTIVES` (₦100), `OPEN AFFILIATE SEARCH` / `OPEN COMPANY SEARCH` (₦500
+  each), and a second `GENERATE TIN`-family entry, `POST GENERATE TIN` (₦1,000, vs. the documented
+  `GENERATE TIN` at ₦500).
+
+**Bottom line: if you need one of the undocumented-but-priced items above, confirm the exact
+endpoint URL with VAS directly before integrating — don't guess a URL from the pricing label.**
+
+## Terminology across sources
+
+VAS's own material isn't always internally consistent on naming:
+
+- The Postman "Categories and Accepted values" table lists affiliate types as *Director, Secretary,
+  Witness, Presenter, Shareholder* — but real example payloads also use `"PSC"` as an
+  `affiliateType` value, which isn't in that table.
+- Query parameter names are camelCase and precise (`priorityService`, `advanceCheck`) but were
+  previously shorthanded in spoken vendor-call notes as `priority`/`advanced_check` — always use
+  the exact camelCase names confirmed here, not the shorthand.
