@@ -44,6 +44,24 @@ usage of it.
   `meansOfId` too. Whether PDF `supportingDoc` uploads have the same limit is unconfirmed.
 </Warning>
 
+## `meansOfId` must be the paper NIN slip — not a passport, not the digital slip
+
+<Warning>
+  **Undocumented; confirmed with VAS on 2026-10-12.** VAS does **not** accept an international
+  passport as `meansOfId`, and it has **queried** the newer digital NIN slip (the printed/downloaded
+  "NIN SLIP" with a QR code, photo, names and date of birth). The digital slip has no NIN printed on
+  its face, and it carries a disclaimer telling people not to scan or photocopy it. Either of those
+  could explain the query, but VAS hasn't said which. CAC's own portal accepts the digital slip
+  directly, so this is VAS-specific.
+
+  The format that's accepted is the paper NIMS "National Identification Number Slip": the table
+  with Tracking ID, NIN, names, address and a photo. `fastcac_api` only accepts that format and
+  rejects the others with guidance before any paid check. See `fastcac_api/HANDOFF.md` §1.40.
+  Two older FastCAC filings that used a passport as ID were approved, so VAS may have tightened
+  this over time. If VAS starts accepting the digital slip again, the switch is the
+  `digital_nin_slip` entry in `document_service._WRONG_KIND_MESSAGES`.
+</Warning>
+
 ## Security
 
 <Danger>
