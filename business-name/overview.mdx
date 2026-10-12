@@ -71,6 +71,22 @@ registration on the account. Whether it's confirmed to fire on every state trans
 `GET /api/vas/portal/user/status/{transactionRef}` polling endpoint as the reliable fallback either
 way. All registrations are also visible on the dashboard's own Audit Log page regardless.
 
+**Callback contract notes:**
+
+- Deliveries are flat payloads keyed by `transactionRef` — no envelope. Example (approval):
+  `{"rcNumber": "7046028", "transactionRef": "VAS20240613165955158", "status": "approved",
+  "entityName": "Jane Doe", ...}`. A queried delivery carries the structured `{reason, comment}`
+  list at the top level under a `queries` key: `{"transactionRef": "...", "queries": [...],
+  "status": "queried"}`.
+- **VAS implements no webhook security** — no signature, no shared secret, URL only. Expect the
+  endpoint to be open and trust the delivered payload; if your provider supports it, harden with a
+  shared-secret header (FastCAC's own `POST /webhooks/vas` does this optionally via
+  `VAS_WEBHOOK_SECRET` / `X-VAS-Webhook-Token`). The rest of the defense lives in the handler:
+  unknown `transactionRef`s are ignored, and a registration state machine + same-status no-op make
+  forged or replayed events harmless.
+- Treat `conditional approval` as **still pending** when it arrives via callback, exactly as the
+  poll describes above.
+
 ## Adding partners
 
 A pending sole-proprietor application can become a partnership via the

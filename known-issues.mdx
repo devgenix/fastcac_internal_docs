@@ -26,6 +26,24 @@ usage of it.
   what's written here — pricing pages change, this reference doesn't update itself.
 </Danger>
 
+## Document images must be under 1MB — stricter than CAC's 2MB
+
+<Warning>
+  **Undocumented, and it bit us in production.** VAS's validator rejects any document image of
+  1MB or more, even though CAC's own portal (and our own upload limit) allows up to 2MB per file.
+  A Business Name submission (SHOP4YU, 2026-10) failed permanently with:
+
+  ```json
+  {"vas_validation_failed": {"signature": ["invalid size format passed, image must be less than 1MB"]}}
+  ```
+
+  It's not stated whether VAS measures the decoded image or the base64 string in the payload
+  (base64 is ~33% larger). `fastcac_api` handles both cases by re-encoding any image over **700KB**
+  as JPEG (~933KB once base64'd) before it's stored and again before it's sent
+  (`app/core/image_compression.py`). Seen on `signature`; assume it applies to `passport` and
+  `meansOfId` too. Whether PDF `supportingDoc` uploads have the same limit is unconfirmed.
+</Warning>
+
 ## Security
 
 <Danger>
